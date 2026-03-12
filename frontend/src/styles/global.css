@@ -1,0 +1,222 @@
+/* src/styles/global.css */
+/* Global styles, CSS variables, animations */
+
+/* ── Google Fonts ───────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap');
+
+/* ── CSS Variables (Design System) ─────────── */
+:root {
+  --bg-primary: #050510;
+  --bg-secondary: #0a0a1f;
+  --bg-card: rgba(255, 255, 255, 0.03);
+  --bg-card-hover: rgba(255, 255, 255, 0.06);
+
+  --neon-cyan: #00f5ff;
+  --neon-purple: #a855f7;
+  --neon-blue: #3b82f6;
+  --neon-green: #10b981;
+  --neon-red: #ef4444;
+  --neon-yellow: #f59e0b;
+
+  --text-primary: #ffffff;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --border-neon: rgba(0, 245, 255, 0.3);
+
+  --font-display: 'Orbitron', monospace;
+  --font-body: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+
+  --shadow-neon: 0 0 20px rgba(0, 245, 255, 0.3);
+  --shadow-purple: 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+/* ── Reset & Base ───────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ── Scrollbar Styling ──────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb {
+  background: var(--neon-cyan);
+  border-radius: 3px;
+}
+
+/* ── Reusable Component Classes ─────────────── */
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-neon);
+  box-shadow: var(--shadow-neon);
+}
+
+.btn-primary {
+  padding: 12px 28px;
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+  border: none;
+  border-radius: 10px;
+  color: #000;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 1px;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 245, 255, 0.4);
+}
+
+.btn-secondary {
+  padding: 12px 28px;
+  background: transparent;
+  border: 1px solid var(--neon-cyan);
+  border-radius: 10px;
+  color: var(--neon-cyan);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(0, 245, 255, 0.1);
+  box-shadow: var(--shadow-neon);
+}
+
+.neon-text {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px rgba(0,245,255,0.5);
+}
+
+.page-container {
+  min-height: 100vh;
+  padding: 100px 40px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.section-subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin-bottom: 40px;
+}
+
+/* ── Animations ────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-15px) rotate(2deg); }
+  66% { transform: translateY(-8px) rotate(-2deg); }
+}
+
+@keyframes pulse-neon {
+  0%, 100% { box-shadow: 0 0 10px var(--neon-cyan); }
+  50% { box-shadow: 0 0 30px var(--neon-cyan), 0 0 60px rgba(0,245,255,0.3); }
+}
+
+@keyframes scan-line {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.fade-in-up { animation: fadeInUp 0.6s ease forwards; }
+.slide-in-left { animation: slideInLeft 0.5s ease forwards; }
+
+/* ── Score Badge Colors ─────────────────────── */
+.score-excellent { color: var(--neon-green); }
+.score-good { color: var(--neon-yellow); }
+.score-average { color: #f97316; }
+.score-low { color: var(--neon-red); }
+
+/* ── Form Styles ────────────────────────────── */
+.form-input {
+  width: 100%;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  transition: border-color 0.3s;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 0 3px rgba(0, 245, 255, 0.1);
+}
+
+.form-label {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── Loading Spinner ────────────────────────── */
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0,245,255,0.1);
+  border-top: 3px solid var(--neon-cyan);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}

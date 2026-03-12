@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#050510" />
+    <meta name="description" content="AI-Powered Resume Analyzer - Get instant feedback on your resume" />
+    <title>ResumeAI - AI Powered Resume Analyzer</title>
+
+    <!-- Google Fonts: loaded here for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+
+    <style>
+      body {
+        margin: 0;
+        background: #050510;
+      }
+
+      /* Floating animation keyframes — needed globally */
+      @keyframes float {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        33% { transform: translateY(-15px) rotate(2deg); }
+        66% { transform: translateY(-8px) rotate(-2deg); }
+      }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes pulse-neon {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- React mounts here -->
+    <div id="root"></div>
+  </body>
+</html>
