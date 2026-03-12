@@ -27,45 +27,40 @@ public class ResumeService {
     @Autowired private AnalysisResultRepository analysisResultRepository;
     @Autowired private MLService mlService;
 
-    @Value("${file.upload-dir}")
+    @Value("${file.upload-dir:/tmp/uploads}")
     private String uploadDir;
 
-    // ─────────────────────────────────────────────────
-    // UPLOAD AND SAVE RESUME
-    // ─────────────────────────────────────────────────
     public Resume saveResume(MultipartFile file, Long userId) {
         try {
-            // Create upload directory if it doesn't exist
-            Path uploadPath = Paths.get(uploadDir);
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-
-            // Create unique filename to avoid conflicts
             String originalName = file.getOriginalFilename();
-            String uniqueFileName = System.currentTimeMillis() + "_" + originalName;
-            Path filePath = uploadPath.resolve(uniqueFileName);
-
-            // Save file bytes to disk
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-
-            // Determine file type
             String fileType = originalName.endsWith(".pdf") ? "PDF" : "DOCX";
 
-            // Extract text from file
+            // Extract text directly from memory stream
+            byte[] fileBytes = file.getBytes();
             String extractedText = fileType.equals("PDF")
-                ? extractTextFromPDF(filePath.toString())
-                : extractTextFromDOCX(filePath.toString());
+                ? extractTextFromPDFBytes(fileBytes)
+                : extractTextFromDOCXBytes(fileBytes);
 
-            // Get the User from DB
+            // Save file to disk (best effort)
+            String uniqueFileName = System.currentTimeMillis() + "_" + originalName;
+            String filePath = "/tmp/uploads/" + uniqueFileName;
+            try {
+                Path uploadPath = Paths.get("/tmp/uploads");
+                if (!Files.exists(uploadPath)) {
+                    Files.createDirectories(uploadPath);
+                }
+                Files.write(Paths.get(filePath), fileBytes);
+            } catch (Exception e) {
+                filePath = originalName; // fallback
+            }
+
             User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Create Resume entity and save to DB
             Resume resume = new Resume();
             resume.setUser(user);
             resume.setFileName(uniqueFileName);
-            resume.setFilePath(filePath.toString());
+            resume.setFilePath(filePath);
             resume.setFileType(fileType);
             resume.setFileSize(file.getSize());
             resume.setExtractedText(extractedText);
@@ -77,22 +72,38 @@ public class ResumeService {
         }
     }
 
-    // ─────────────────────────────────────────────────
-    // EXTRACT TEXT FROM PDF FILE
-    // ─────────────────────────────────────────────────
-    public String extractTextFromPDF(String filePath) {
-        try (PDDocument document = PDDocument.load(new File(filePath))) {
+    // Extract text from PDF bytes directly in memory
+    public String extractTextFromPDFBytes(byte[] bytes) {
+        try (PDDocument document = PDDocument.load(bytes)) {
             PDFTextStripper stripper = new PDFTextStripper();
-            String text = stripper.getText(document);
-            return text.trim();
+            return stripper.getText(document).trim();
         } catch (IOException e) {
             throw new RuntimeException("PDF text extraction failed: " + e.getMessage());
         }
     }
 
-    // ─────────────────────────────────────────────────
-    // EXTRACT TEXT FROM DOCX FILE
-    // ─────────────────────────────────────────────────
+    // Extract text from DOCX bytes directly in memory
+    public String extractTextFromDOCXBytes(byte[] bytes) {
+        try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(bytes))) {
+            StringBuilder text = new StringBuilder();
+            for (XWPFParagraph paragraph : document.getParagraphs()) {
+                text.append(paragraph.getText()).append("\n");
+            }
+            return text.toString().trim();
+        } catch (IOException e) {
+            throw new RuntimeException("DOCX text extraction failed: " + e.getMessage());
+        }
+    }
+
+    public String extractTextFromPDF(String filePath) {
+        try (PDDocument document = PDDocument.load(new File(filePath))) {
+            PDFTextStripper stripper = new PDFTextStripper();
+            return stripper.getText(document).trim();
+        } catch (IOException e) {
+            throw new RuntimeException("PDF text extraction failed: " + e.getMessage());
+        }
+    }
+
     public String extractTextFromDOCX(String filePath) {
         try (XWPFDocument document = new XWPFDocument(new FileInputStream(filePath))) {
             StringBuilder text = new StringBuilder();
@@ -105,13 +116,9 @@ public class ResumeService {
         }
     }
 
-    // ─────────────────────────────────────────────────
-    // ANALYZE RESUME AGAINST JOB DESCRIPTION
-    // ─────────────────────────────────────────────────
     public AnalysisResult analyzeResume(Long resumeId, String jobDescription) {
-        // Find resume in DB
         Resume resume = resumeRepository.findById(resumeId)
-            .orElseThrow(() -> new RuntimeException("Resume not found with id: " + resumeId));
+            .orElseThrow(() -> new RuntimeException("Resume not found"));
 
         String resumeText = resume.getExtractedText();
 
@@ -119,49 +126,31 @@ public class ResumeService {
             throw new RuntimeException("No text found in resume. Please re-upload.");
         }
 
-        // Send to Python ML service
         return mlService.analyzeResume(resume, resumeText, jobDescription);
     }
 
-    // ─────────────────────────────────────────────────
-    // GET ALL RESUMES FOR A USER
-    // ─────────────────────────────────────────────────
     public List<Resume> getResumesByUser(Long userId) {
         return resumeRepository.findByUserIdOrderByUploadedAtDesc(userId);
     }
 
-    // ─────────────────────────────────────────────────
-    // GET RESUME BY ID
-    // ─────────────────────────────────────────────────
     public Optional<Resume> getResumeById(Long id) {
         return resumeRepository.findById(id);
     }
 
-    // ─────────────────────────────────────────────────
-    // GET ALL ANALYSIS RESULTS (for Interviewer)
-    // ─────────────────────────────────────────────────
     public List<AnalysisResult> getAllResultsRanked() {
         return analysisResultRepository.findAllByOrderByMatchScoreDesc();
     }
 
-    // ─────────────────────────────────────────────────
-    // UPDATE RECRUITER DECISION
-    // ─────────────────────────────────────────────────
     public AnalysisResult updateDecision(Long analysisId, String decision) {
         AnalysisResult result = analysisResultRepository.findById(analysisId)
             .orElseThrow(() -> new RuntimeException("Analysis result not found"));
-
         result.setDecision(AnalysisResult.Decision.valueOf(decision.toUpperCase()));
         return analysisResultRepository.save(result);
     }
 
-    // ─────────────────────────────────────────────────
-    // DOWNLOAD RESUME FILE
-    // ─────────────────────────────────────────────────
     public byte[] downloadResume(Long resumeId) throws IOException {
         Resume resume = resumeRepository.findById(resumeId)
             .orElseThrow(() -> new RuntimeException("Resume not found"));
-
         Path path = Paths.get(resume.getFilePath());
         return Files.readAllBytes(path);
     }
