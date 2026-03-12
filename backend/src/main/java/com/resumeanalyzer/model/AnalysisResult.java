@@ -1,6 +1,7 @@
 package com.resumeanalyzer.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,71 +12,83 @@ public class AnalysisResult {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "resume_id")
     private Resume resume;
 
-    @Column(columnDefinition = "TEXT", name = "job_description")
+    @Column(name = "job_description", columnDefinition = "TEXT")
     private String jobDescription;
 
     @Column(name = "match_score")
     private Double matchScore;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "feedback", columnDefinition = "TEXT")
     private String feedback;
 
-    @Column(columnDefinition = "TEXT", name = "keywords_matched")
+    @Column(name = "keywords_matched", columnDefinition = "TEXT")
     private String keywordsMatched;
 
-    @Column(columnDefinition = "TEXT", name = "keywords_missing")
+    @Column(name = "keywords_missing", columnDefinition = "TEXT")
     private String keywordsMissing;
 
-    @Column(columnDefinition = "TEXT", name = "skills_found")
+    @Column(name = "skills_found", columnDefinition = "TEXT")
     private String skillsFound;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "suggestions", columnDefinition = "TEXT")
     private String suggestions;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(name = "summary", columnDefinition = "TEXT")
     private String summary;
 
     @Enumerated(EnumType.STRING)
-    private Decision decision = Decision.PENDING;
+    private Decision decision;
 
     @Column(name = "analyzed_at")
-    private LocalDateTime analyzedAt = LocalDateTime.now();
+    private LocalDateTime analyzedAt;
 
     public enum Decision {
-        PENDING,
-        ACCEPTED,
-        REJECTED
+        PENDING, ACCEPTED, REJECTED
     }
 
-    // ── Getters ──
-    public Long getId() { return id; }
-    public Resume getResume() { return resume; }
-    public String getJobDescription() { return jobDescription; }
-    public Double getMatchScore() { return matchScore; }
-    public String getFeedback() { return feedback; }
-    public String getKeywordsMatched() { return keywordsMatched; }
-    public String getKeywordsMissing() { return keywordsMissing; }
-    public String getSkillsFound() { return skillsFound; }
-    public String getSuggestions() { return suggestions; }
-    public String getSummary() { return summary; }
-    public Decision getDecision() { return decision; }
-    public LocalDateTime getAnalyzedAt() { return analyzedAt; }
+    @PrePersist
+    protected void onCreate() {
+        analyzedAt = LocalDateTime.now();
+    }
 
-    // ── Setters ──
+    public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+
+    public Resume getResume() { return resume; }
     public void setResume(Resume resume) { this.resume = resume; }
+
+    public String getJobDescription() { return jobDescription; }
     public void setJobDescription(String jobDescription) { this.jobDescription = jobDescription; }
+
+    public Double getMatchScore() { return matchScore; }
     public void setMatchScore(Double matchScore) { this.matchScore = matchScore; }
+
+    public String getFeedback() { return feedback; }
     public void setFeedback(String feedback) { this.feedback = feedback; }
+
+    public String getKeywordsMatched() { return keywordsMatched; }
     public void setKeywordsMatched(String keywordsMatched) { this.keywordsMatched = keywordsMatched; }
+
+    public String getKeywordsMissing() { return keywordsMissing; }
     public void setKeywordsMissing(String keywordsMissing) { this.keywordsMissing = keywordsMissing; }
+
+    public String getSkillsFound() { return skillsFound; }
     public void setSkillsFound(String skillsFound) { this.skillsFound = skillsFound; }
+
+    public String getSuggestions() { return suggestions; }
     public void setSuggestions(String suggestions) { this.suggestions = suggestions; }
+
+    public String getSummary() { return summary; }
     public void setSummary(String summary) { this.summary = summary; }
+
+    public Decision getDecision() { return decision; }
     public void setDecision(Decision decision) { this.decision = decision; }
+
+    public LocalDateTime getAnalyzedAt() { return analyzedAt; }
     public void setAnalyzedAt(LocalDateTime analyzedAt) { this.analyzedAt = analyzedAt; }
 }
