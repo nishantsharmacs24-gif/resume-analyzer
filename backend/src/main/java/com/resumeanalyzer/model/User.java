@@ -1,13 +1,14 @@
 package com.resumeanalyzer.model;
-
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
 @Table(name = "users")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -18,6 +19,7 @@ public class User {
     @Column(unique = true, nullable = false)
     private String email;
 
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
@@ -31,6 +33,7 @@ public class User {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @JsonIgnore
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Resume> resumes;
 
@@ -39,7 +42,6 @@ public class User {
         INTERVIEWER
     }
 
-    // ── Getters ──
     public Long getId() { return id; }
     public String getName() { return name; }
     public String getEmail() { return email; }
@@ -50,7 +52,6 @@ public class User {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public List<Resume> getResumes() { return resumes; }
 
-    // ── Setters ──
     public void setId(Long id) { this.id = id; }
     public void setName(String name) { this.name = name; }
     public void setEmail(String email) { this.email = email; }
