@@ -6,7 +6,7 @@ import axios from 'axios';
 
 // Base URL for Spring Boot backend
 const API = axios.create({
-  baseURL: 'http://localhost:8080/api'
+  baseURL:'https://resume-analyzer-production-b28d.up.railway.app/api'
 });
 
 // Automatically attach JWT token to every request
