@@ -69,7 +69,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000")); // React dev server
+        configuration.setAllowedOrigins(Arrays.asList(
+    "http://localhost:3000",
+    "https://romantic-amazement-production.up.railway.app"
+));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
