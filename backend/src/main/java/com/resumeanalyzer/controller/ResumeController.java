@@ -3,116 +3,102 @@ package com.resumeanalyzer.controller;
 import com.resumeanalyzer.model.AnalysisResult;
 import com.resumeanalyzer.model.Resume;
 import com.resumeanalyzer.service.ResumeService;
+import com.resumeanalyzer.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/resume")
-@CrossOrigin(origins = "http://localhost:3000")
 public class ResumeController {
 
-    @Autowired
-    private ResumeService resumeService;
+    @Autowired private ResumeService resumeService;
+    @Autowired private JwtUtil jwtUtil;
 
-    // ─────────────────────────────────────
-    // POST /api/resume/upload
-    // Upload a PDF or DOCX resume file
-    // ─────────────────────────────────────
     @PostMapping("/upload")
     public ResponseEntity<?> uploadResume(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("userId") Long userId) {
-
-        // Validate file type
-        String originalName = file.getOriginalFilename();
-        if (originalName == null ||
-            (!originalName.endsWith(".pdf") && !originalName.endsWith(".docx"))) {
-            return ResponseEntity.badRequest()
-                .body(Map.of("error", "Only PDF and DOCX files are allowed!"));
-        }
-
+            @RequestHeader("Authorization") String token) {
         try {
-            Resume saved = resumeService.saveResume(file, userId);
-            return ResponseEntity.ok(Map.of(
-                "success", true,
-                "message", "Resume uploaded successfully!",
-                "resumeId", saved.getId(),
-                "fileName", saved.getFileName()
-            ));
+            Long userId = jwtUtil.extractUserId(token.replace("Bearer ", ""));
+            Resume resume = resumeService.saveResume(file, userId);
+
+            // Return only safe fields — no circular references
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", resume.getId());
+            response.put("fileName", resume.getFileName());
+            response.put("fileType", resume.getFileType());
+            response.put("fileSize", resume.getFileSize());
+            response.put("uploadedAt", resume.getUploadedAt());
+            response.put("hasText", resume.getExtractedText() != null && !resume.getExtractedText().isEmpty());
+            response.put("textLength", resume.getExtractedText() != null ? resume.getExtractedText().length() : 0);
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                .body(Map.of("error", "Upload failed: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    // ─────────────────────────────────────
-    // POST /api/resume/analyze
-    // Analyze resume against job description
-    // ─────────────────────────────────────
     @PostMapping("/analyze")
-    public ResponseEntity<?> analyzeResume(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> analyzeResume(
+            @RequestBody Map<String, Object> request,
+            @RequestHeader("Authorization") String token) {
         try {
             Long resumeId = Long.valueOf(request.get("resumeId").toString());
             String jobDescription = (String) request.get("jobDescription");
 
-            if (jobDescription == null || jobDescription.trim().isEmpty()) {
-                return ResponseEntity.badRequest()
-                    .body(Map.of("error", "Job description cannot be empty!"));
-            }
-
             AnalysisResult result = resumeService.analyzeResume(resumeId, jobDescription);
-            return ResponseEntity.ok(result);
 
+            // Return only safe fields — no circular references
+            Map<String, Object> response = new HashMap<>();
+            response.put("id", result.getId());
+            response.put("matchScore", result.getMatchScore());
+            response.put("feedback", result.getFeedback());
+            response.put("keywordsMatched", result.getKeywordsMatched());
+            response.put("keywordsMissing", result.getKeywordsMissing());
+            response.put("skillsFound", result.getSkillsFound());
+            response.put("suggestions", result.getSuggestions());
+            response.put("summary", result.getSummary());
+            response.put("decision", result.getDecision());
+            response.put("analyzedAt", result.getAnalyzedAt());
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                .body(Map.of("error", "Analysis failed: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    // ─────────────────────────────────────
-    // GET /api/resume/user/{userId}
-    // Get all resumes uploaded by a user
-    // ─────────────────────────────────────
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Resume>> getUserResumes(@PathVariable Long userId) {
-        List<Resume> resumes = resumeService.getResumesByUser(userId);
-        return ResponseEntity.ok(resumes);
+    @GetMapping("/list")
+    public ResponseEntity<?> getResumes(@RequestHeader("Authorization") String token) {
+        try {
+            Long userId = jwtUtil.extractUserId(token.replace("Bearer ", ""));
+            var resumes = resumeService.getResumesByUser(userId);
+
+            var response = resumes.stream().map(r -> {
+                Map<String, Object> map = new HashMap<>();
+                map.put("id", r.getId());
+                map.put("fileName", r.getFileName());
+                map.put("fileType", r.getFileType());
+                map.put("uploadedAt", r.getUploadedAt());
+                return map;
+            }).toList();
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
-    // ─────────────────────────────────────
-    // GET /api/resume/{id}
-    // Get a single resume by ID
-    // ─────────────────────────────────────
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getResume(@PathVariable Long id) {
-        return resumeService.getResumeById(id)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.notFound().build());
-    }
-
-    // ─────────────────────────────────────
-    // GET /api/resume/download/{id}
-    // Download original resume file
-    // ─────────────────────────────────────
     @GetMapping("/download/{id}")
-    public ResponseEntity<byte[]> downloadResume(@PathVariable Long id) throws IOException {
-        byte[] fileBytes = resumeService.downloadResume(id);
-
-        return resumeService.getResumeById(id).map(resume -> {
-            String contentType = resume.getFileType().equals("PDF")
-                ? "application/pdf"
-                : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-
+    public ResponseEntity<?> downloadResume(@PathVariable Long id) {
+        try {
+            byte[] data = resumeService.downloadResume(id);
             return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                    "attachment; filename=\"" + resume.getFileName() + "\"")
-                .contentType(MediaType.parseMediaType(contentType))
-                .body(fileBytes);
-        }).orElse(ResponseEntity.notFound().build());
+                .header("Content-Disposition", "attachment; filename=resume.pdf")
+                .body(data);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }
