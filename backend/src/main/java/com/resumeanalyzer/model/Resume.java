@@ -90,4 +90,3 @@ public class Resume {
     public List<AnalysisResult> getAnalysisResults() { return analysisResults; }
     public void setAnalysisResults(List<AnalysisResult> analysisResults) { this.analysisResults = analysisResults; }
 }
-``
